@@ -3,4 +3,4 @@
 MODDIR=${0%/*}
 
 rm -rf "$MODDIR/tmp"
-ui_print "卸载完成,仅卸载OTA更新辅助，假回锁请自行卸载（因为需要清数据）"
+ui_print "Uninstallation complete. Only the OTA update auxiliary tool has been removed. Please uninstall the mock re-lock manually, as it requires a data wipe."

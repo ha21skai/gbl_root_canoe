@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>假回锁</title>
+    <title>Fake Lock</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -13,84 +13,84 @@
           <p class="eyebrow">KernelSU Module WebUI</p>
           <h1>BL Flasher</h1>
           <p class="hero-copy">
-            自动识别当前活动槽位，如果新版本存在GBL漏洞，则跳过BL刷写，同时将BL相关镜像刷写到另一个槽位，并按需求自动修补新版ABL到efisp
+            Auto-detects the current active slot. If a GBL vulnerability exists in the new version, it skips BL flashing, flashes BL-related images to the other slot, and automatically patches the new ABL to efisp as needed.
           </p>
         </div>
         <div class="hero-meta">
-          <span class="chip" id="stateChip">等待检测</span>
-          <span class="chip chip-warn" id="slotChip">槽位未知</span>
+          <span class="chip" id="stateChip">Waiting for detection</span>
+          <span class="chip chip-warn" id="slotChip">Unknown slot</span>
         </div>
       </header>
 
       <main class="grid-layout">
         <section class="panel stats-panel">
           <div class="panel-heading">
-            <h2>槽位状态</h2>
-            <button class="ghost-button" id="refreshButton" type="button">刷新</button>
+            <h2>Slot Status</h2>
+            <button class="ghost-button" id="refreshButton" type="button">Refresh</button>
           </div>
 
           <div class="stats-grid">
             <article class="stat-card">
-              <span class="stat-label">当前槽位</span>
+              <span class="stat-label">Current slot/span>
               <strong class="stat-value" id="currentSlot">-</strong>
             </article>
             <article class="stat-card accent-card">
-              <span class="stat-label">目标槽位</span>
+              <span class="stat-label">Target slot</span>
               <strong class="stat-value" id="targetSlot">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">镜像数量</span>
+              <span class="stat-label">Number of Images</span>
               <strong class="stat-value" id="imageCount">0</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-label">任务状态</span>
-              <strong class="stat-value stat-small" id="taskMessage">等待操作</strong>
+              <span class="stat-label">Task Status</span>
+              <strong class="stat-value stat-small" id="taskMessage">Awaiting action</strong>
             </article>
           </div>
 
           <div class="action-strip">
-            <button class="primary-button" id="flashButton" type="button">刷写到另一槽位</button>
-            <button class="ghost-button" id="clearLogButton" type="button">清空日志</button>
+            <button class="primary-button" id="flashButton" type="button">Flash to other slot</button>
+            <button class="ghost-button" id="clearLogButton" type="button">Clear logs</button>
           </div>
 
           <label class="option-check" for="updateEfispCheckbox">
             <input id="updateEfispCheckbox" type="checkbox" />
-            <span>更新 efisp（默认关闭，仅勾选时执行）</span>
+            <span>Update efisp (Disabled by default, executes only when checked)</span>
           </label>
 
           <label class="option-check" for="installSuperfastbootCheckbox">
         <input id="installSuperfastbootCheckbox" type="checkbox" />
-            <span>安装 superfastboot（将 loader 注入到 ABL，需同时勾选"更新 efisp"）</span>
+            <span>Install superfastboot (Injects loader into ABL; requires "Update efisp" to be checked as well)</span>
         </label>
 
         <label class="option-check" for="debugModeCheckbox">
        <input id="debugModeCheckbox" type="checkbox" />
-            <span>调试模式（仅处理不刷写，生成的文件保存在 tmp 目录）</span>
+            <span>Debug Mode (Process only without flashing; generated files are saved to tmp directory)</span>
       </label>
 
           <p class="warning-copy">
-         刷写对象是 bootloader 相关分区，风险较高。开始前请确认镜像与机型严格匹配。
+         The flashing target includes bootloader-related partitions and carries high risk. Before proceeding, please verify that the images strictly match your device model.
           </p>
         </section>
 
         <section class="panel map-panel">
           <div class="panel-heading">
-            <h2>镜像映射</h2>
-            <span class="caption" id="updatedAt">尚未检测</span>
+            <h2>Image Mapping</h2>
+            <span class="caption" id="updatedAt">Not yet detected</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>分区名</th>
-                  <th>源分区 (当前槽位)</th>
-                  <th>目标分区</th>
-                  <th>操作</th>
+                  <th>Partition Name</th>
+                  <th>Source Partition (Current Slot)</th>
+                  <th>Target Partition</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="imageTableBody">
               <tr>
-                <td colspan="4" class="empty-row">等待读取模块状态</td>
+                <td colspan="4" class="empty-row">Reading module status...</td>
               </tr>
               </tbody>
             </table>
@@ -99,10 +99,10 @@
 
         <section class="panel log-panel">
           <div class="panel-heading">
-            <h2>实时日志</h2>
-            <span class="caption">自动轮询最近 200 行</span>
+            <h2>Real time Logs</h2>
+            <span class="caption">Auto-refreshing last 200 lines</span>
           </div>
-          <pre id="logOutput">等待日志输出...</pre>
+          <pre id="logOutput">Waiting for log output.../pre>
         </section>
 
       </main>
@@ -110,14 +110,14 @@
 
     <div class="modal-backdrop hidden" id="confirmModal" aria-hidden="true">
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-        <p class="eyebrow">高风险操作</p>
-        <h2 id="confirmTitle">确认刷写</h2>
+        <p class="eyebrow">High-Risk Operation</p>
+        <h2 id="confirmTitle">Confirm Flash</h2>
         <p id="confirmText">
-          即将开始刷写，请确认操作对象和槽位。
+          About to start flashing. Please confirm the target partition and slot.
         </p>
         <div class="modal-actions">
-          <button class="ghost-button" id="cancelConfirmButton" type="button">取消</button>
-          <button class="primary-button" id="nextConfirmButton" type="button">继续</button>
+          <button class="ghost-button" id="cancelConfirmButton" type="button">Cancel</button>
+          <button class="primary-button" id="nextConfirmButton" type="button">Continue</button>
         </div>
       </div>
     </div>

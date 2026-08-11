@@ -25,49 +25,49 @@ RUNTIME_DIR="$MODPATH/tmp"
 mkdir -p "$RUNTIME_DIR"
 partition_path() { printf '%s\n' "$BY_NAME_DIR/${1}${2}"; }
 #install efisp
-ui_print "确保你的内核没有Baseband Guard，设备BL锁已经解锁"
-ui_print "确保你的设备是8gen5/8elitegen5"
-ui_print "检测漏洞中..."
+ui_print "Ensure that your kernel does not have Baseband Guard, and that your device's bootloader is unlocked."
+ui_print "Ensure that your device is powered by Snapdragon 8 Gen 5 / Snapdragon 8 Elite Gen 5"
+ui_print "Checking for vulnerabilities..."
 current_slot=$(detect_current_slot 2>/dev/null)
-ui_print "请选择是否第一次安装假回锁"
-ui_print "音量上为是（全新安装，需要格式化)"
-ui_print "音量下为否（如果之前安装过一次假回锁或者刚刚首次安装并格式化，建议选择否）"
-ui_print "如果选择是，将会安装包含补丁的efisp 然后重启recovery 进行格式化，格式化后请安装一次这个模块来完成安装，这时选择否"
-ui_print "如果选择否，将会安装OTA更新补丁，每次OTA更新后都需要打开这个模块来安装补丁，来保留BL版本，安装完成后重启系统即可"
-while true; do #循环等待用户按键选择，音量上为是，音量下为否
+ui_print "Please select whether this is your first time installing the fake lock."
+ui_print "Volume Up for Yes (Clean install, requires data format)"
+ui_print "Volume Down for No (Recommended if you have previously installed the fake lock, or if you just completed the first-time installation and data format)"
+ui_print "If you select "Yes", the patched efisp will be installed and the system will reboot into Recovery to perform a format. After formatting, please install this module again to complete the installation, and select "No" at that point"
+ui_print "If you select "No", the OTA update patch will be installed. To retain your BL version, you must open this module to install the patch after every OTA update. Once the installation is complete, simply reboot the system"
+while true; do #Looping and waiting for user key selection: Volume Up for Yes, Volume Down for No
   keyevent=$(timeout 0.5 getevent -l 2>/dev/null)
   if echo "$keyevent" | grep -q "KEY_VOLUMEUP"; then
-    ui_print "选择了是，正在安装包含补丁的efisp"
+    ui_print "Selected "Yes". Installing the patched efisp..."
     if [ -z "$current_slot" ]; then
-      ui_print "无法识别当前槽位，已中止安装"
+      ui_print "Failed to identify the current slot. Installation aborted"
       abort "cannot detect current slot"
     fi
     abl_part=$(partition_path abl "$current_slot")
     $MODPATH/bin/extractfv -o "$MODPATH/tmp" -v "$abl_part" >> "$MODPATH/tmp/extract.log" 2>&1
     $MODPATH/bin/patch_abl "$MODPATH/tmp/LinuxLoader.efi" "$MODPATH/tmp/patched.efi" >> "$MODPATH/tmp/patch.log" 2>&1
     if [ ! -f "$MODPATH/tmp/patched.efi" ]; then
-      ui_print "补丁应用失败，已中止安装"
+      ui_print "Failed to apply the patch. Installation aborted"
       abort "patch failed"
     fi
     if grep -q "Warning: Failed to patch ABL GBL" "$RUNTIME_DIR/patch.log"; then
-      ui_print "没有GBL漏洞，安装失败，已中止安装"
+      ui_print "GBL vulnerability not found. Installation failed and aborted"
       abort "no exploit"
     fi
     if ! blockdev --setrw "/dev/block/by-name/efisp" >> "$MODPATH/tmp/flash.log" 2>&1; then
-      ui_print "efisp 分区设置可写失败，已中止安装"
+      ui_print "Failed to set the efisp partition as writable. Installation aborted"
       abort "setrw failed"
     fi
     if ! dd if="$MODPATH/tmp/patched.efi" of=/dev/block/by-name/efisp bs=4M conv=fsync >> "$MODPATH/tmp/flash.log" 2>&1; then
-      ui_print "efisp 分区刷写失败，已中止安装"
+      ui_print "Failed to flash the efisp partition. Installation aborted"
       abort "flash failed"
     fi
     sync
-    ui_print "安装完成，请重启到recovery进行格式化，格式化后请安装一次这个模块来完成安装，这时选择否"
+    ui_print "Installation complete. Please reboot into Recovery to format. After formatting, install this module once more to complete the setup, selecting "No" this time"
     rm -rf "$RUNTIME_DIR"
     break
   elif echo "$keyevent" | grep -q "KEY_VOLUMEDOWN"; then
-    ui_print "选择了否，正在安装OTA更新模块"
-    ui_print "安装完成，请重启系统即可"
+    ui_print "Selected "No". Installing the OTA update module..."
+    ui_print "Installation complete. Simply reboot the system"
     rm -rf "$RUNTIME_DIR"
     break
   fi
